@@ -48,12 +48,12 @@ public interface RestrictionNames {
     public static String NIN = "NIN";
 
     /**
-     * 左模糊查询（from Object o where o.property like %?）
+     * 左模糊查询（from Object o where o.property like ?%）
      */
     public static String LLIKE = "LLIKE";
 
     /**
-     * 右模糊查询（from Object o where o.property like ?%)
+     * 右模糊查询（from Object o where o.property like %?)
      */
     public static String RLIKE = "RLIKE";
 

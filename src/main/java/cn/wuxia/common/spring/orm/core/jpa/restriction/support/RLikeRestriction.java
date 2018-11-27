@@ -8,7 +8,7 @@ import cn.wuxia.common.spring.orm.core.RestrictionNames;
 import cn.wuxia.common.spring.orm.core.jpa.restriction.PredicateSingleValueSupport;
 
 /**
- * 右模糊约束 ( from object o where o.value like '?%') RestrictionName:RLIKE
+ * 右模糊约束 ( from object o where o.value like '%?') RestrictionName:RLIKE
  * <p>
  * 表达式:RLIKE属性类型_属性名称[_OR_属性名称...]
  * </p>
@@ -36,7 +36,7 @@ public class RLikeRestriction extends PredicateSingleValueSupport {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Predicate build(Path expression, Object value, CriteriaBuilder builder) {
 
-        return builder.like(expression, value + "%");
+        return builder.like(expression, "%"+value );
     }
 
 }

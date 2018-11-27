@@ -153,11 +153,11 @@ public abstract class JdbcTemplateDao {
                 switch (condition.getMatchType()) {
                     case LL:
                         queryParameter.add(condition.getProperty() + condition.getMatchType().getSymbol());
-                        appendValues.add("%" + condition.getValue());
+                        appendValues.add( condition.getValue()+"%");
                         break;
                     case RL:
                         queryParameter.add(condition.getProperty() + condition.getMatchType().getSymbol());
-                        appendValues.add(condition.getValue() + "%");
+                        appendValues.add("%"+condition.getValue() );
                         break;
                     case FL:
                         queryParameter.add(condition.getProperty() + condition.getMatchType().getSymbol());
