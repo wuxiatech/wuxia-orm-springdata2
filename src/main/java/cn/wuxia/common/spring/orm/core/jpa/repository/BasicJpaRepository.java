@@ -122,4 +122,11 @@ public interface BasicJpaRepository<T, ID extends Serializable> extends JpaRepos
      * @return
      */
     public Pages<T> findPage(Pages<T> pages);
+
+    /**
+     * 统计总数
+     * @param filters
+     * @return
+     */
+    public long count(PropertyFilter... filters);
 }

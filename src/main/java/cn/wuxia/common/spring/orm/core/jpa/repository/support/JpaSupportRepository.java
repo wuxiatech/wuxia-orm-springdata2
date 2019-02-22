@@ -224,7 +224,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
      */
     @Override
     public T findOneBy(List<PropertyFilter> filters) {
-        return (T) findOne(Specifications.get(filters));
+        return (T) findOne(Specifications.get(filters)).get();
     }
 
     /*
@@ -246,7 +246,12 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
      */
     @Override
     public T findOneBy(String propertyName, Object value, String restrictionName) {
-        return (T) findOne(Specifications.get(propertyName, value, restrictionName));
+        return (T) findOne(Specifications.get(propertyName, value, restrictionName)).orElse(null);
+    }
+
+    @Override
+    public long count(PropertyFilter... filters){
+        return super.count(Specifications.get(filters));
     }
 
     @Override
@@ -299,11 +304,11 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         }
 
         if (pages.getPageSize() == -1) {
-            List<T> result = findBy(filters, new Sort(orders));
+            List<T> result = findBy(filters,  Sort.by(orders));
             pages.setResult(result);
             pages.setTotalCount(result.size());
         } else {
-            PageRequest pageRequest = new PageRequest(pages.getPageNo() - 1, pages.getPageSize(), new Sort(orders));
+            PageRequest pageRequest =  PageRequest.of(pages.getPageNo() - 1, pages.getPageSize(),  Sort.by(orders));
             Page<T> page = findPage(pageRequest, filters);
             pages.setResult(page.getContent());
             pages.setPageNo(page.getNumber() + 1);

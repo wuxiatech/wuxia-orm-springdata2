@@ -8,6 +8,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import com.google.common.collect.Lists;
 import org.springframework.data.jpa.domain.Specification;
 
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
@@ -46,7 +47,14 @@ public class PropertyFilterSpecification<T> implements Specification<T> {
     public PropertyFilterSpecification(List<PropertyFilter> filters) {
         this.filters.addAll(filters);
     }
-
+    /**
+     * 通过属性过滤器集合构建
+     *
+     * @param filters 集合
+     */
+    public PropertyFilterSpecification(PropertyFilter... filters) {
+        this.filters.addAll(Lists.newArrayList(filters));
+    }
     /*
      * (non-Javadoc)
      * @see org.springframework.data.jpa.domain.Specification#toPredicate(javax.

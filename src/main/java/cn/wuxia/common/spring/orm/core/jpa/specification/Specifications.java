@@ -30,7 +30,15 @@ public class Specifications {
     public static Specification get(List<PropertyFilter> filters) {
         return new PropertyFilterSpecification(filters);
     }
-
+    /**
+     * 通过属性过滤器集合，创建Specification
+     *
+     * @param filters 属性过滤器集合
+     * @return {@link Specification}
+     */
+    public static Specification get(PropertyFilter... filters) {
+        return new PropertyFilterSpecification(filters);
+    }
     /**
      * 通过属性过滤器，创建Specification
      * 
