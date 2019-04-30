@@ -35,12 +35,12 @@ public class BasicJpaRepositoryFactory extends JpaRepositoryFactory {
 	}
 
 	@Override
-	protected <T, ID extends Serializable> SimpleJpaRepository<T, ?> getTargetRepository(
+	protected SimpleJpaRepository<?, ?> getTargetRepository(
 			RepositoryInformation information, EntityManager entityManager) {
 		Class<?> repositoryInterface = information.getRepositoryInterface();
 		JpaEntityInformation<?, Serializable> entityInformation = getEntityInformation(information.getDomainType());
 
-		SimpleJpaRepository<T, ID> repo = null;
+		SimpleJpaRepository repo = null;
 
 		if (isQueryDslExecutor(repositoryInterface)) {
 			repo = new QuerydslJpaRepository(entityInformation, entityManager);
