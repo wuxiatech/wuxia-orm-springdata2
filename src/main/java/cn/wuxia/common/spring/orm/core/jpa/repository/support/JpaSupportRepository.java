@@ -1,5 +1,6 @@
 package cn.wuxia.common.spring.orm.core.jpa.repository.support;
 
+import cn.wuxia.common.orm.PageSQLHandler;
 import cn.wuxia.common.orm.query.Conditions;
 import cn.wuxia.common.orm.query.Pages;
 import cn.wuxia.common.orm.query.PropertyType;
@@ -10,12 +11,16 @@ import cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository;
 import cn.wuxia.common.spring.orm.core.jpa.specification.Specifications;
 import cn.wuxia.common.spring.orm.enumeration.ExecuteMehtod;
 import cn.wuxia.common.spring.orm.strategy.utils.ConvertCodeUtils;
+import cn.wuxia.common.util.ArrayUtil;
+import cn.wuxia.common.util.ListUtil;
 import cn.wuxia.common.util.NumberUtil;
+import cn.wuxia.common.util.StringUtil;
 import cn.wuxia.common.util.reflection.ConvertUtil;
 import cn.wuxia.common.util.reflection.ReflectionUtil;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
-import org.hibernate.Session;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -31,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
@@ -46,7 +52,6 @@ import java.util.List;
  * @param <ID> 主键Id类型
  * @author songlin.li
  */
-@SuppressWarnings("unchecked")
 public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> implements BasicJpaRepository<T, ID> {
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -73,15 +78,6 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         this.entityClass = (Class<T>) ReflectionUtil.getTargetClass(entityInformation.getJavaType());
     }
 
-    /**
-     * return org.hibernate.Session;
-     *
-     * @return
-     */
-    public Session getSession() {
-        return (Session) entityManager.getDelegate();
-    }
-
     public EntityManager getEntityManager() {
         return entityManager;
     }
@@ -90,12 +86,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         return entityInformation;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.springframework.data.jpa.repository.support.SimpleJpaRepository#save
-     * (S)
-     */
+
     @Override
     @Transactional
     public <S extends T> S save(S entity) {
@@ -112,12 +103,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.springframework.data.jpa.repository.support.SimpleJpaRepository#delete
-     * (java.lang.Object)
-     */
+
     @Override
     @Transactional
     public void delete(T entity) {
@@ -134,123 +120,68 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findBy
-     * (java.util.List)
-     */
     @Override
     public List<T> findBy(List<PropertyFilter> filters) {
         return findBy(filters, (Sort) null);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findBy
-     * (java.util.List, org.springframework.data.domain.Sort)
-     */
+
     @Override
     public List<T> findBy(List<PropertyFilter> filters, Sort sort) {
         return findAll(Specifications.get(filters), sort);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findPage
-     * (org.springframework.data.domain.Pageable, java.util.List)
-     */
+
     @Override
     public Page<T> findPage(Pageable pageable, List<PropertyFilter> filters) {
-        if (CollectionUtils.isEmpty(filters))
+        if (CollectionUtils.isEmpty(filters)) {
             return findAll(pageable);
+        }
         Specification s = Specifications.get(filters);
         return findAll(Specifications.get(filters), pageable);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findBy
-     * (java.lang.String, java.lang.Object)
-     */
+
     @Override
     public List<T> findBy(String propertyName, Object value) {
         return findBy(propertyName, value, (Sort) null);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findBy
-     * (java.lang.String, java.lang.Object,
-     * org.springframework.data.domain.Sort)
-     */
+
     @Override
     public List<T> findBy(String propertyName, Object value, Sort sort) {
         return findBy(propertyName, value, sort, RestrictionNames.EQ);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findBy
-     * (java.lang.String, java.lang.Object, java.lang.String)
-     */
     @Override
     public List<T> findBy(String propertyName, Object value, String restrictionName) {
         return findBy(propertyName, value, (Sort) null, restrictionName);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findBy
-     * (java.lang.String, java.lang.Object,
-     * org.springframework.data.domain.Sort, java.lang.String)
-     */
+
     @Override
     public List<T> findBy(String propertyName, Object value, Sort sort, String restrictionName) {
         return findAll(Specifications.get(propertyName, value, restrictionName), sort);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findOneBy
-     * (java.util.List)
-     */
+
     @Override
     public T findOneBy(List<PropertyFilter> filters) {
         return (T) findOne(Specifications.get(filters)).get();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findOneBy
-     * (java.lang.String, java.lang.Object)
-     */
     @Override
     public T findOneBy(String propertyName, Object value) {
         return findOneBy(propertyName, value, RestrictionNames.EQ);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * cn.wuxia.common.spring.orm.core.jpa.repository.BasicJpaRepository#findOne
-     * (java.lang.String, java.lang.Object, java.lang.String)
-     */
     @Override
     public T findOneBy(String propertyName, Object value, String restrictionName) {
         return (T) findOne(Specifications.get(propertyName, value, restrictionName)).orElse(null);
     }
 
     @Override
-    public long count(PropertyFilter... filters){
+    public long count(PropertyFilter... filters) {
         return super.count(Specifications.get(filters));
     }
 
@@ -262,10 +193,11 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
             Iterator<cn.wuxia.common.orm.query.Sort.Order> it = pages.getSort().iterator();
             while (it.hasNext()) {
                 cn.wuxia.common.orm.query.Sort.Order order = it.next();
-                if (order.isAscending())
+                if (order.isAscending()) {
                     orders.add(new Order(Direction.ASC, order.getProperty()));
-                else
+                } else {
                     orders.add(new Order(Direction.DESC, order.getProperty()));
+                }
             }
         }
         List<PropertyFilter> filters = Lists.newArrayList();
@@ -304,11 +236,11 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         }
 
         if (pages.getPageSize() == -1) {
-            List<T> result = findBy(filters,  Sort.by(orders));
+            List<T> result = findBy(filters, Sort.by(orders));
             pages.setResult(result);
             pages.setTotalCount(result.size());
         } else {
-            PageRequest pageRequest =  PageRequest.of(pages.getPageNo() - 1, pages.getPageSize(),  Sort.by(orders));
+            PageRequest pageRequest = PageRequest.of(pages.getPageNo() - 1, pages.getPageSize(), Sort.by(orders));
             Page<T> page = findPage(pageRequest, filters);
             pages.setResult(page.getContent());
             pages.setPageNo(page.getNumber() + 1);
@@ -316,5 +248,188 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
             pages.setTotalCount(NumberUtil.toInteger(page.getTotalElements()));
         }
         return pages;
+    }
+
+    @Override
+    public <X> Pages<X> queryPage(final Pages<X> page, final Class<X> clazz, final String jpql, final Object... values) {
+        Assert.notNull(page, "page can not be null");
+        /**
+         * 动态拼接参数
+         */
+        List<Object> paramValue = ListUtil.arrayToList(values);
+        String queryHql = PageSQLHandler.dualDynamicCondition(jpql, page.getConditions(), paramValue);
+        if (page.isAutoCount()) {
+            long totalCount = countHqlResult(queryHql, paramValue.toArray());
+            page.setTotalCount(totalCount);
+            if (totalCount == 0) {
+                return page;
+            }
+        }
+
+        queryHql += appendOrderBy(queryHql, page.getSort());
+
+        Query query = createQuery(queryHql, clazz, paramValue.toArray());
+
+        setPageParameterToQuery(query, page);
+
+        List<X> result = query.getResultList();
+        page.setResult(result);
+        return page;
+    }
+
+    @Override
+    public <X> Pages<X> queryPageBySQL(final Pages<X> page, final Class<X> clazz, final String sql, final Object... values) {
+
+        /**
+         * 动态拼接参数
+         */
+        List<Object> paramValue = ListUtil.arrayToList(values);
+        String querySql = PageSQLHandler.dualDynamicCondition(sql, page.getConditions(), paramValue);
+        if (page.isAutoCount()) {
+            long totalCount = countSQLResult(querySql, paramValue.toArray());
+            page.setTotalCount(totalCount);
+            if (totalCount == 0) {
+                return page;
+            }
+        }
+
+        querySql += appendOrderBy(querySql, page.getSort());
+
+        Query query = createSQLQuery(querySql, clazz, paramValue.toArray());
+
+        setPageParameterToQuery(query, page);
+
+        List<X> result = query.getResultList();
+        page.setResult(result);
+
+        return page;
+    }
+
+
+    /**
+     * count record
+     *
+     * @param sql
+     * @param values
+     * @return
+     * @author songlin.li
+     */
+    protected long countSQLResult(String sql, Object... values) {
+        long recordTotal;
+        int classNameIndex = sql.toLowerCase().indexOf("from");
+        if (classNameIndex == -1) {
+            return 0;
+        } else {
+            sql = "select count(1) as count from (" + sql + ") orgi";
+        }
+
+        Query query = createSQLQuery(sql, values);
+
+        recordTotal = NumberUtil.toLong(query.getSingleResult(), 0L);
+        logger.debug("Total: " + recordTotal);
+        return recordTotal;
+    }
+
+
+    protected Query createSQLQuery(final String sql, final Object... values) {
+        Assert.hasText(sql, "queryString can not be null");
+        Query query = entityManager.createNativeQuery(sql);
+        if (ArrayUtils.isNotEmpty(values)) {
+            for (int i = 0; i < values.length; i++) {
+                if (values[i] != null) {
+                    /**
+                     * NativeQuery position start form 1 not 0
+                     */
+                    query.setParameter(i + 1, values[i]);
+                }
+            }
+            logger.debug("values: {}", values);
+        }
+        return query;
+    }
+
+
+    /**
+     * build the queryString to append the sort order by
+     *
+     * @param queryString
+     * @param sort
+     * @return
+     * @author songlin
+     */
+    protected String appendOrderBy(String queryString, cn.wuxia.common.orm.query.Sort sort) {
+        String orderBy = "";
+        if (sort != null) {
+            Assert.doesNotContain(queryString, "order by",
+                    "duplicate order by,hql already has the sort: " + StringUtil.substringAfter(queryString, "order by"));
+            orderBy = " order by " + sort.toString();
+        }
+        return orderBy;
+    }
+
+    protected Query createSQLQuery(final String sql, final Class clazz, final Object... values) {
+        Assert.hasText(sql, "queryString can not be null");
+        Query query = entityManager.createNativeQuery(sql, clazz);
+        if (ArrayUtils.isNotEmpty(values)) {
+            for (int i = 0; i < values.length; i++) {
+                if (values[i] != null) {
+                    /**
+                     * NativeQuery position start form 1 not 0
+                     */
+                    query.setParameter(i + 1, values[i]);
+                }
+            }
+            logger.debug("values: {}", values);
+        }
+        return query;
+    }
+
+    protected long countHqlResult(final String hql, final Object... values) {
+        String countHql = prepareCountHql(hql);
+        Object count = createQuery(countHql, values).getSingleResult();
+        return NumberUtil.toLong(count, 0L);
+    }
+
+
+    protected Query createQuery(final String hql, final Object... values) {
+        Assert.hasText(hql, "queryString can not be null");
+        Query query = entityManager.createQuery(hql);
+        if (ArrayUtil.isNotEmpty(values)) {
+            for (int i = 0; i < values.length; i++) {
+                query.setParameter(i, values[i]);
+            }
+        }
+        return query;
+    }
+
+    protected Query createQuery(final String hql, final Class clazz, final Object... values) {
+        Assert.hasText(hql, "queryString can not be null");
+        Query query = entityManager.createQuery(hql, clazz);
+        if (ArrayUtil.isNotEmpty(values)) {
+            for (int i = 0; i < values.length; i++) {
+                query.setParameter(i, values[i]);
+            }
+        }
+        return query;
+    }
+
+    private String prepareCountHql(String orgHql) {
+        String fromHql = orgHql;
+        // the select clause and order by clause will affect the count query for
+        // simple exclusion.
+        fromHql = "from " + StringUtils.substringAfter(fromHql, "from");
+        fromHql = StringUtils.substringBefore(fromHql, "order by");
+
+        String countHql = "select count(*) " + fromHql;
+        return countHql;
+    }
+
+
+    protected void setPageParameterToQuery(Query q, final Pages<?> page) {
+        if (page.getPageSize() > 0) {
+            // hibernate firstResult start with 0
+            q.setFirstResult(page.getFirst() - 1);
+            q.setMaxResults(page.getPageSize());
+        }
     }
 }
