@@ -23,6 +23,7 @@ public class InRestriction extends PredicateMultipleValueSupport {
      * org.exitsoft.orm.core.spring.data.jpa.PredicateBuilder#getRestrictionName
      * ()
      */
+    @Override
     public String getRestrictionName() {
         return RestrictionNames.IN;
     }

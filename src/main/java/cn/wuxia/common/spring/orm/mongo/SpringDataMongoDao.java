@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import cn.wuxia.common.orm.query.MatchType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,13 +129,13 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
      * 删除
      *
      * @param query
-     * @param update
      */
     public void delete(Query query) {
         if (StringUtil.isBlank(collectionName)) {
             getMongoTemplate().remove(query, this.getEntityClass());
-        } else
+        } else {
             getMongoTemplate().remove(query, this.getEntityClass(), collectionName);
+        }
     }
 
     /**
@@ -235,13 +236,31 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     /**
      * 分页查找
      *
-     * @param query
      * @param page
      * @return
      */
     public Pages<T> findPage(Pages<T> page) {
-        Query query = new Query();
+        return findPage(new Query(), page);
+    }
+
+    /**
+     * 分页查找
+     *
+     * @param query
+     * @param page
+     * @return
+     */
+    public Pages<T> findPage(Query query, Pages<T> page) {
         for (Conditions cond : page.getConditions()) {
+            /**
+             * 除了is null or is not null 条件外，其他条件必须带值
+             */
+            if (cond.getMatchType() != MatchType.ISN && cond.getMatchType() != MatchType.INN) {
+                if (StringUtil.isBlank(cond.getValue())) {
+                    logger.warn("condition: " + cond.getProperty() + " value is null, ignore this condition");
+                    continue;
+                }
+            }
             switch (cond.getMatchType()) {
 
                 case EQ:
@@ -267,7 +286,6 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
                             Criteria.where(cond.getProperty()).regex(Pattern.compile("^.*\"+cond.getValue()+\"$", Pattern.CASE_INSENSITIVE)));
                     break;
                 case FL:
-
                     //模糊匹配
                     query.addCriteria(
                             Criteria.where(cond.getProperty()).regex(Pattern.compile("^.*" + cond.getValue() + ".*$", Pattern.CASE_INSENSITIVE)));
@@ -295,10 +313,15 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
                 case BW:
                     query.addCriteria(Criteria.where(cond.getProperty()).gte(cond.getValue()).lte(cond.getAnotherValue()));
                     break;
+                default:
+                    break;
             }
 
         }
         long count = this.count(query);
+        if (count <= 0) {
+            return page;
+        }
         page.setTotalCount(count);
         int pageNumber = page.getPageNo();
         int pageSize = page.getPageSize();
@@ -316,8 +339,7 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
                     orders.add(new Sort.Order(Direction.DESC, order.getProperty()));
                 }
             }
-            Sort sort = new Sort(orders);
-            query.with(sort);
+            query.with(Sort.by(orders));
         }
         List<T> rows = this.find(query);
         page.setResult(rows);
@@ -333,8 +355,9 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     protected long count(Query query) {
         if (StringUtil.isBlank(collectionName)) {
             return getMongoTemplate().count(query, this.getEntityClass());
-        } else
+        } else {
             return getMongoTemplate().count(query, this.getEntityClass(), collectionName);
+        }
     }
 
     /**

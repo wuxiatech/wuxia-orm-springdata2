@@ -23,6 +23,7 @@ public class NinRestriction extends PredicateMultipleValueSupport {
      * org.exitsoft.orm.core.spring.data.jpa.PredicateBuilder#getRestrictionName
      * ()
      */
+    @Override
     public String getRestrictionName() {
 
         return RestrictionNames.NIN;

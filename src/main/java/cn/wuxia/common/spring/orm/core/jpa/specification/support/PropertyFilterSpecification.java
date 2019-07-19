@@ -61,6 +61,7 @@ public class PropertyFilterSpecification<T> implements Specification<T> {
      * persistence.criteria.Root, javax.persistence.criteria.CriteriaQuery,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 
         List<Predicate> list = new ArrayList<Predicate>();

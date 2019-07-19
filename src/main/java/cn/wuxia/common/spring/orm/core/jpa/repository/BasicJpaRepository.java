@@ -132,5 +132,5 @@ public interface BasicJpaRepository<T, ID extends Serializable> extends JpaRepos
 
     public <X> Pages<X> queryPage(final Pages<X> page, final Class<X> clazz, final String jpql, final Object... values);
 
-    public <X> Pages<X> queryPageBySQL(final Pages<X> page, final Class<X> clazz, final String jpql, final Object... values);
+    public <X> Pages<X> queryPageBySQL(final Pages<X> page, final Class<X> clazz, final String sql, final Object... values);
 }

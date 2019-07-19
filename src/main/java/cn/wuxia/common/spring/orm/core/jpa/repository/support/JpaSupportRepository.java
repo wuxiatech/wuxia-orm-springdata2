@@ -1,9 +1,10 @@
 package cn.wuxia.common.spring.orm.core.jpa.repository.support;
 
+import cn.wuxia.common.exception.AppServiceException;
 import cn.wuxia.common.orm.PageSQLHandler;
 import cn.wuxia.common.orm.query.Conditions;
+import cn.wuxia.common.orm.query.MatchType;
 import cn.wuxia.common.orm.query.Pages;
-import cn.wuxia.common.orm.query.PropertyType;
 import cn.wuxia.common.spring.orm.annotation.StateDelete;
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
 import cn.wuxia.common.spring.orm.core.RestrictionNames;
@@ -122,7 +123,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
 
     @Override
     public List<T> findBy(List<PropertyFilter> filters) {
-        return findBy(filters, (Sort) null);
+        return findBy(filters, Sort.unsorted());
     }
 
 
@@ -144,7 +145,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
 
     @Override
     public List<T> findBy(String propertyName, Object value) {
-        return findBy(propertyName, value, (Sort) null);
+        return findBy(propertyName, value, Sort.unsorted());
     }
 
 
@@ -155,7 +156,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
 
     @Override
     public List<T> findBy(String propertyName, Object value, String restrictionName) {
-        return findBy(propertyName, value, (Sort) null, restrictionName);
+        return findBy(propertyName, value, Sort.unsorted(), restrictionName);
     }
 
 
@@ -202,6 +203,15 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         }
         List<PropertyFilter> filters = Lists.newArrayList();
         for (Conditions condition : pages.getConditions()) {
+            /**
+             * 除了is null or is not null 条件外，其他条件必须带值
+             */
+            if (condition.getMatchType() != MatchType.ISN && condition.getMatchType() != MatchType.INN) {
+                if (StringUtil.isBlank(condition.getValue())) {
+                    logger.warn("condition: " + condition.getProperty() + " value is null, ignore this condition");
+                    continue;
+                }
+            }
             PropertyFilter filter = new PropertyFilter();
 
             switch (condition.getMatchType()) {
@@ -218,6 +228,9 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
                     filter.setRestrictionName(RestrictionNames.NE);
                     break;
                 case BW:
+                    if (StringUtil.isBlank(condition.getAnotherValue())) {
+                        continue;
+                    }
                     break;
                 case FL:
                     filter.setRestrictionName(RestrictionNames.LIKE);
@@ -228,10 +241,18 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
                 case INN:
                     filter.setRestrictionName(RestrictionNames.INN);
                     break;
+                default:
+                    logger.warn("暂时不支持该操作:{}", condition.getMatchType());
+                    break;
             }
-            filter.setPropertyType(PropertyType.S.getValue());
+            /**
+             * FIXME 不同参数类型的问题
+             */
+            if (StringUtil.isNotBlank(condition.getValue())) {
+                filter.setPropertyType(condition.getValue().getClass());
+                filter.setMatchValue(condition.getValue().toString());
+            }
             filter.setPropertyNames(new String[]{condition.getProperty()});
-            filter.setMatchValue((String) condition.getValue());
             filters.add(filter);
         }
 
@@ -369,6 +390,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
 
     protected Query createSQLQuery(final String sql, final Class clazz, final Object... values) {
         Assert.hasText(sql, "queryString can not be null");
+
         Query query = entityManager.createNativeQuery(sql, clazz);
         if (ArrayUtils.isNotEmpty(values)) {
             for (int i = 0; i < values.length; i++) {
@@ -417,11 +439,21 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         String fromHql = orgHql;
         // the select clause and order by clause will affect the count query for
         // simple exclusion.
-        fromHql = "from " + StringUtils.substringAfter(fromHql, "from");
-        fromHql = StringUtils.substringBefore(fromHql, "order by");
+        int start = StringUtils.indexOfIgnoreCase(fromHql, "from ");
+        if (start < 0) {
+            throw new AppServiceException("查询语句有误，缺少from： [" + orgHql + "]");
+        }
+        int groupby = StringUtils.indexOfIgnoreCase(fromHql, " group by ");
+        if (groupby > 0) {
+            throw new AppServiceException("查询语句有误，暂不支持group by，请使用sql查询：" + orgHql);
+        }
+        int end = StringUtils.indexOfIgnoreCase(fromHql, " order by ");
+        if (end > 0) {
+            return "select count(*) " + StringUtil.substring(fromHql, start, end);
+        } else {
+            return "select count(*) " + StringUtil.substring(fromHql, start);
+        }
 
-        String countHql = "select count(*) " + fromHql;
-        return countHql;
     }
 
 

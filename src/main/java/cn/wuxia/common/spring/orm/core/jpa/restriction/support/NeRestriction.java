@@ -22,6 +22,7 @@ public class NeRestriction extends EqRestriction {
      * org.exitsoft.orm.core.spring.data.jpa.restriction.support.EqRestriction
      * #getRestrictionName()
      */
+    @Override
     public String getRestrictionName() {
 
         return RestrictionNames.NE;
