@@ -1,18 +1,16 @@
 package cn.wuxia.common.spring.orm.mongo;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.Serializable;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
+import cn.wuxia.common.entity.ValidationEntity;
+import cn.wuxia.common.exception.ValidateException;
+import cn.wuxia.common.orm.query.Conditions;
 import cn.wuxia.common.orm.query.MatchType;
+import cn.wuxia.common.orm.query.Pages;
+import cn.wuxia.common.orm.query.Sort.Order;
+import cn.wuxia.common.util.ListUtil;
+import cn.wuxia.common.util.StringUtil;
+import cn.wuxia.common.util.reflection.ReflectionUtil;
+import com.google.common.collect.Lists;
+import com.mongodb.client.result.DeleteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +22,17 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import com.google.common.collect.Lists;
-import com.mongodb.WriteResult;
-import com.mongodb.client.result.DeleteResult;
-
-import cn.wuxia.common.entity.ValidationEntity;
-import cn.wuxia.common.orm.query.Conditions;
-import cn.wuxia.common.orm.query.Pages;
-import cn.wuxia.common.orm.query.Sort.Order;
-import cn.wuxia.common.util.ListUtil;
-import cn.wuxia.common.util.StringUtil;
-import cn.wuxia.common.util.reflection.ReflectionUtil;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends Serializable> {
     protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -62,8 +60,9 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     public List<T> find(Query query) {
         if (StringUtil.isBlank(collectionName)) {
             return getMongoTemplate().find(query, this.getEntityClass());
-        } else
+        } else {
             return getMongoTemplate().find(query, this.getEntityClass(), collectionName);
+        }
     }
 
     /**
@@ -75,8 +74,9 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     public T findUnique(Query query) {
         if (StringUtil.isBlank(collectionName)) {
             return getMongoTemplate().findOne(query, this.getEntityClass());
-        } else
+        } else {
             return getMongoTemplate().findOne(query, this.getEntityClass(), collectionName);
+        }
     }
 
     /**
@@ -108,8 +108,9 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     public void update(Query query, Update update) {
         if (StringUtil.isBlank(collectionName)) {
             getMongoTemplate().updateMulti(query, update, this.getEntityClass());
-        } else
+        } else {
             getMongoTemplate().updateMulti(query, update, this.getEntityClass(), collectionName);
+        }
     }
 
     /**
@@ -121,8 +122,9 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     public T updateFirst(Query query, Update update) {
         if (StringUtil.isBlank(collectionName)) {
             return getMongoTemplate().findAndModify(query, update, this.getEntityClass());
-        } else
+        } else {
             return getMongoTemplate().findAndModify(query, update, this.getEntityClass(), collectionName);
+        }
     }
 
     /**
@@ -144,7 +146,8 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
      * @param entity
      * @return
      */
-    public void save(T entity) {
+    public void save(T entity) throws ValidateException {
+        entity.validate();
         if (StringUtil.isBlank(collectionName)) {
             getMongoTemplate().insert(entity);
         } else {
@@ -152,9 +155,10 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
         }
     }
 
-    public void batchSave(Collection<T> entitys) {
-        if (ListUtil.isEmpty(entitys))
+    public void batchSave(Collection<T> entitys) throws ValidateException {
+        if (ListUtil.isEmpty(entitys)) {
             return;
+        }
         if (StringUtil.isBlank(collectionName)) {
             getMongoTemplate().insert(entitys, this.getEntityClass());
         } else {
@@ -203,8 +207,9 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
     public T findById(final K id) {
         if (StringUtil.isBlank(collectionName)) {
             return getMongoTemplate().findById(id, this.getEntityClass());
-        } else
+        } else {
             return getMongoTemplate().findById(id, this.getEntityClass(), collectionName);
+        }
     }
 
     /**
