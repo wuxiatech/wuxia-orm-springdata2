@@ -1,7 +1,5 @@
 package cn.wuxia.common.spring.orm.mongo;
 
-import cn.wuxia.common.entity.ValidationEntity;
-import cn.wuxia.common.exception.ValidateException;
 import cn.wuxia.common.orm.query.Conditions;
 import cn.wuxia.common.orm.query.MatchType;
 import cn.wuxia.common.orm.query.Pages;
@@ -34,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends Serializable> {
+public abstract class SpringDataMongoDao<T, K extends Serializable> {
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     protected MongoTemplate mongoTemplate;
@@ -146,8 +144,7 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
      * @param entity
      * @return
      */
-    public void save(T entity) throws ValidateException {
-        entity.validate();
+    public void save(T entity) {
         if (StringUtil.isBlank(collectionName)) {
             getMongoTemplate().insert(entity);
         } else {
@@ -155,7 +152,7 @@ public abstract class SpringDataMongoDao<T extends ValidationEntity, K extends S
         }
     }
 
-    public void batchSave(Collection<T> entitys) throws ValidateException {
+    public void batchSave(Collection<T> entitys) {
         if (ListUtil.isEmpty(entitys)) {
             return;
         }

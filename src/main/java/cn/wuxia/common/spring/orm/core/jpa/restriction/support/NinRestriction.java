@@ -36,6 +36,7 @@ public class NinRestriction extends PredicateMultipleValueSupport {
      * #buildRestriction(javax.persistence.criteria.Path, java.lang.Object[],
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     public Predicate buildRestriction(Path<?> expression, Object[] values, CriteriaBuilder builder) {
 
         return builder.not(expression.in(values));

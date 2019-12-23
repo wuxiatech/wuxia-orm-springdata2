@@ -35,6 +35,7 @@ public class InRestriction extends PredicateMultipleValueSupport {
      * #buildRestriction(javax.persistence.criteria.Path, java.lang.Object[],
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     @SuppressWarnings("rawtypes")
     public Predicate buildRestriction(Path expression, Object[] values, CriteriaBuilder builder) {
         return expression.in(values);

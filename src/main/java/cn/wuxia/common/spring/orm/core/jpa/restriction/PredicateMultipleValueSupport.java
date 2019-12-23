@@ -46,6 +46,7 @@ public abstract class PredicateMultipleValueSupport extends PredicateSingleValue
      * #build(org.exitsoft.orm.core.PropertyFilter,
      * org.exitsoft.orm.core.spring.data.jpa.JpaBuilderModel)
      */
+    @Override
     public Predicate build(PropertyFilter filter, SpecificationModel model) {
         Object value = convertMatchValue(filter.getMatchValue(), filter.getPropertyType());
         Predicate predicate = null;
@@ -70,6 +71,7 @@ public abstract class PredicateMultipleValueSupport extends PredicateSingleValue
      * #build(javax.persistence.criteria.Path, java.lang.Object,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     public Predicate build(Path<?> expression, Object value, CriteriaBuilder builder) {
         return buildRestriction(expression, (Object[]) value, builder);
     }

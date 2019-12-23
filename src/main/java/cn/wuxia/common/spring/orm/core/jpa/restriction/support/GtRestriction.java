@@ -35,6 +35,7 @@ public class GtRestriction extends PredicateSingleValueSupport {
      * persistence.criteria.Path, java.lang.Object,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Predicate build(Path expression, Object value, CriteriaBuilder builder) {
 

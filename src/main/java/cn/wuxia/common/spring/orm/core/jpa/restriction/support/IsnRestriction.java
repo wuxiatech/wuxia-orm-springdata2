@@ -35,6 +35,7 @@ public class IsnRestriction extends PredicateSingleValueSupport {
      * #build(javax.persistence.criteria.Path, java.lang.Object,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     @SuppressWarnings("rawtypes")
     public Predicate build(Path expression, Object value, CriteriaBuilder builder) {
         return expression.isNull();

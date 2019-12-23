@@ -5,16 +5,20 @@ import java.util.Map;
 
 import javax.persistence.criteria.Predicate;
 
+import cn.wuxia.common.orm.query.Conditions;
+import cn.wuxia.common.orm.query.MatchType;
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
 import cn.wuxia.common.spring.orm.core.PropertyFilters;
+import cn.wuxia.common.spring.orm.core.RestrictionNames;
 import cn.wuxia.common.spring.orm.core.jpa.restriction.support.*;
 import cn.wuxia.common.spring.orm.core.jpa.specification.SpecificationModel;
+import cn.wuxia.common.util.StringUtil;
 
 /**
  * jpa约束捆绑者，将所有的{@link PredicateBuilder}实现类添加到
  * {@link PropertyFilters#getRestrictionsMap()}中，
  * 辅佐PropertyFilterSpecification和RestrictionNameSpecification做创建Predicate操作。
- * 
+ *
  * @author songlin.li
  */
 public class JpaRestrictionBuilder {
@@ -53,9 +57,9 @@ public class JpaRestrictionBuilder {
 
     /**
      * 通过属性过滤器创建Predicate
-     * 
+     *
      * @param filter 属性过滤器
-     * @param restrictionModel jpa查询绑定载体
+     * @param model  jpa查询绑定载体
      * @return {@link Predicate}
      */
     public static Predicate getRestriction(PropertyFilter filter, SpecificationModel model) {
@@ -67,12 +71,42 @@ public class JpaRestrictionBuilder {
     }
 
     /**
+     * 通过属性过滤器创建Predicate
+     *
+     * @param condition 属性过滤器
+     * @param model     jpa查询绑定载体
+     * @return {@link Predicate}
+     */
+    public static Predicate getRestriction(Conditions condition, SpecificationModel model) {
+        String restrictionName = parse(condition.getMatchType());
+        if (!predicateBuilders.containsKey(restrictionName)) {
+            throw new IllegalArgumentException("找不到约束名:" + restrictionName);
+        }
+        PredicateBuilder predicateBuilder = predicateBuilders.get(restrictionName);
+        return predicateBuilder.build(condition, model);
+    }
+
+    private static String parse(MatchType matchType) {
+        switch (matchType) {
+            case LL:
+                return RestrictionNames.LLIKE;
+            case RL:
+                return RestrictionNames.RLIKE;
+            case FL:
+                return RestrictionNames.LIKE;
+            default:
+                return matchType.name();
+        }
+
+    }
+
+    /**
      * 通过属性名称，值，约束条件创建Predicate
-     * 
-     * @param propertyName 属性名称
-     * @param value 值
+     *
+     * @param propertyName    属性名称
+     * @param value           值
      * @param restrictionName 约束条件
-     * @param model jpa查询绑定载体
+     * @param model           jpa查询绑定载体
      * @return {@link Predicate}
      */
     public static Predicate getRestriction(String propertyName, Object value, String restrictionName, SpecificationModel model) {
@@ -85,7 +119,7 @@ public class JpaRestrictionBuilder {
 
     /**
      * 获取所有的条件约束
-     * 
+     *
      * @return Map
      */
     public static Map<String, PredicateBuilder> getPredicateBuilders() {
@@ -94,7 +128,7 @@ public class JpaRestrictionBuilder {
 
     /**
      * 设置所有的条件约束
-     * 
+     *
      * @param 条件约束
      */
     public static void setPredicateBuilders(Map<String, PredicateBuilder> predicateBuilders) {

@@ -34,6 +34,7 @@ public class LtRestriction extends PredicateSingleValueSupport {
      * persistence.criteria.Path, java.lang.Object,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Predicate build(Path expression, Object value, CriteriaBuilder builder) {
         return builder.lessThan(expression, (Comparable) value);

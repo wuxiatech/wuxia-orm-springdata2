@@ -26,6 +26,7 @@ public class EqRestriction extends PredicateSingleValueSupport {
      * org.exitsoft.orm.core.spring.data.jpa.restriction.PredicateSingleValueSupport
      * #getMatchValue(java.lang.String, java.lang.Class)
      */
+    @Override
     public MatchValue getMatchValue(String matchValue, Class<?> propertyType) {
         MatchValue matchValueModel = super.getMatchValue(matchValue, propertyType);
         for (int i = 0; i < matchValueModel.getValues().size(); i++) {
@@ -56,6 +57,7 @@ public class EqRestriction extends PredicateSingleValueSupport {
      * #build(javax.persistence.criteria.Path, java.lang.Object,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     public Predicate build(Path<?> expression, Object value, CriteriaBuilder builder) {
 
         return value == null ? builder.isNull(expression) : builder.equal(expression, value);

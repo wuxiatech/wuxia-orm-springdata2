@@ -3,13 +3,13 @@ package cn.wuxia.common.spring.orm.core.jpa.repository;
 import java.io.Serializable;
 import java.util.List;
 
+import cn.wuxia.common.orm.query.Conditions;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import cn.wuxia.common.entity.ValidationEntity;
 import cn.wuxia.common.orm.query.Pages;
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
 
@@ -22,14 +22,21 @@ import cn.wuxia.common.spring.orm.core.PropertyFilter;
  * @param <ID> 主键Id类型
  */
 public interface BasicJpaRepository<T, ID extends Serializable> extends JpaRepository<T, ID>, JpaSpecificationExecutor<T> {
+    /**
+     * 通过属性过滤器查询全部对象
+     *
+     * @param filters 属性过滤器集合
+     * @return List
+     */
+    public List<T> findBy(PropertyFilter... filters);
 
     /**
      * 通过属性过滤器查询全部对象
      * 
-     * @param filters 属性过滤器集合
+     * @param conditions 属性过滤器集合
      * @return List
      */
-    public List<T> findBy(List<PropertyFilter> filters);
+    public List<T> findBy(Conditions... conditions);
 
     /**
      * 通过属性名查询全部对象
@@ -73,7 +80,7 @@ public interface BasicJpaRepository<T, ID extends Serializable> extends JpaRepos
 
     /**
      * 通过属性过滤器查询全部对象
-     * 
+     *
      * @param filters 属性过滤器集合
      * @param sort 排序形式
      * @return List
@@ -81,21 +88,40 @@ public interface BasicJpaRepository<T, ID extends Serializable> extends JpaRepos
     public List<T> findBy(List<PropertyFilter> filters, Sort sort);
 
     /**
-     * 通过属性过滤器查询对象分页
+     * 通过属性过滤器查询全部对象
      * 
+     * @param conditions 属性过滤器集合
+     * @param sort 排序形式
+     * @return List
+     */
+    public List<T> findBy(List<Conditions> conditions, cn.wuxia.common.orm.query.Sort sort);
+
+
+    /**
+     * 通过属性过滤器查询对象分页
+     *
      * @param pageable 分页参数
      * @param filters 属性过滤器集合
      * @return {@link Page}
      */
-    public Page<T> findPage(Pageable pageable, List<PropertyFilter> filters);
+    public Page<T> findPage(Pageable pageable, PropertyFilter... filters);
+
+
+    /**
+     * 通过属性过滤器查询单个对象
+     *
+     * @param filters 属性过滤器
+     * @return Object
+     */
+    public T findOneBy(PropertyFilter... filters);
 
     /**
      * 通过属性过滤器查询单个对象
      * 
-     * @param filters 属性过滤器
+     * @param conditions 属性过滤器
      * @return Object
      */
-    public T findOneBy(List<PropertyFilter> filters);
+    public T findOneBy(Conditions... conditions);
 
     /**
      * 通过属性名查询单个对象
@@ -129,6 +155,13 @@ public interface BasicJpaRepository<T, ID extends Serializable> extends JpaRepos
      * @return
      */
     public long count(PropertyFilter... filters);
+
+    /**
+     * 统计总数
+     * @param conditions
+     * @return
+     */
+    public long count(Conditions... conditions);
 
     public <X> Pages<X> queryPage(final Pages<X> page, final Class<X> clazz, final String jpql, final Object... values);
 

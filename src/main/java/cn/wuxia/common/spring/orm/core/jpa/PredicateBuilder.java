@@ -3,6 +3,7 @@ package cn.wuxia.common.spring.orm.core.jpa;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;
 
+import cn.wuxia.common.orm.query.Conditions;
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
 import cn.wuxia.common.spring.orm.core.jpa.specification.SpecificationModel;
 
@@ -23,6 +24,14 @@ public interface PredicateBuilder {
      */
     public Predicate build(PropertyFilter filter, SpecificationModel model);
 
+    /**
+     * 获取Jpa的约束标准
+     *
+     * @param condition 属性过滤器
+     * @param model jpa绑定模型
+     * @return {@link Predicate}
+     */
+    public Predicate build(Conditions condition, SpecificationModel model);
     /**
      * 获取Predicate标准的约束名称
      * 

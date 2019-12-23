@@ -1,9 +1,9 @@
 package cn.wuxia.common.spring.orm.core.jpa.repository.support;
 
 import cn.wuxia.common.exception.AppServiceException;
+import cn.wuxia.common.exception.ValidateException;
 import cn.wuxia.common.orm.PageSQLHandler;
 import cn.wuxia.common.orm.query.Conditions;
-import cn.wuxia.common.orm.query.MatchType;
 import cn.wuxia.common.orm.query.Pages;
 import cn.wuxia.common.spring.orm.annotation.StateDelete;
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
@@ -18,8 +18,8 @@ import cn.wuxia.common.util.NumberUtil;
 import cn.wuxia.common.util.StringUtil;
 import cn.wuxia.common.util.reflection.ConvertUtil;
 import cn.wuxia.common.util.reflection.ReflectionUtil;
+import cn.wuxia.common.validator.ValidationEntity;
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -30,7 +30,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,24 +121,49 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
     }
 
     @Override
-    public List<T> findBy(List<PropertyFilter> filters) {
-        return findBy(filters, Sort.unsorted());
+    public List<T> findBy(PropertyFilter... filters) {
+        return findBy(ListUtil.arrayToList(filters), Sort.unsorted());
     }
 
 
     @Override
     public List<T> findBy(List<PropertyFilter> filters, Sort sort) {
-        return findAll(Specifications.get(filters), sort);
+        return findAll(Specifications.get(ListUtil.listToArray(filters)), sort);
     }
 
 
     @Override
-    public Page<T> findPage(Pageable pageable, List<PropertyFilter> filters) {
-        if (CollectionUtils.isEmpty(filters)) {
+    public Page<T> findPage(Pageable pageable, PropertyFilter... filters) {
+        if (ArrayUtils.isEmpty(filters)) {
             return findAll(pageable);
         }
-        Specification s = Specifications.get(filters);
         return findAll(Specifications.get(filters), pageable);
+    }
+
+    @Override
+    public List<T> findBy(Conditions... conditions) {
+        return findBy(ListUtil.arrayToList(conditions), null);
+    }
+
+    public List<T> findBy(List<Conditions> conditions) {
+        return findBy(conditions, null);
+    }
+
+    @Override
+    public List<T> findBy(List<Conditions> conditions, cn.wuxia.common.orm.query.Sort sort) {
+        List<Order> orders = Lists.newArrayList();
+        if (null != sort) {
+            Iterator<cn.wuxia.common.orm.query.Sort.Order> it = sort.iterator();
+            while (it.hasNext()) {
+                cn.wuxia.common.orm.query.Sort.Order order = it.next();
+                if (order.isAscending()) {
+                    orders.add(new Order(Direction.ASC, order.getProperty()));
+                } else {
+                    orders.add(new Order(Direction.DESC, order.getProperty()));
+                }
+            }
+        }
+        return findAll(Specifications.get(ListUtil.listToArray(conditions)), Sort.by(orders));
     }
 
 
@@ -165,10 +189,14 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         return findAll(Specifications.get(propertyName, value, restrictionName), sort);
     }
 
+    @Override
+    public T findOneBy(PropertyFilter... filters) {
+        return (T) findOne(Specifications.get(filters)).get();
+    }
 
     @Override
-    public T findOneBy(List<PropertyFilter> filters) {
-        return (T) findOne(Specifications.get(filters)).get();
+    public T findOneBy(Conditions... conditions) {
+        return (T) findOne(Specifications.get(conditions)).get();
     }
 
     @Override
@@ -187,82 +215,38 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
     }
 
     @Override
+    public long count(Conditions... conditions) {
+        return super.count(Specifications.get(conditions));
+    }
+
+    public Page<T> findPage(Pageable pageable, Conditions... conditions) {
+        if (ArrayUtils.isEmpty(conditions)) {
+            return findAll(pageable);
+        }
+        return findAll(Specifications.get(conditions), pageable);
+    }
+
+    @Override
     public Pages<T> findPage(Pages<T> pages) {
-
-        List<Order> orders = Lists.newArrayList();
-        if (null != pages.getSort()) {
-            Iterator<cn.wuxia.common.orm.query.Sort.Order> it = pages.getSort().iterator();
-            while (it.hasNext()) {
-                cn.wuxia.common.orm.query.Sort.Order order = it.next();
-                if (order.isAscending()) {
-                    orders.add(new Order(Direction.ASC, order.getProperty()));
-                } else {
-                    orders.add(new Order(Direction.DESC, order.getProperty()));
-                }
-            }
-        }
-        List<PropertyFilter> filters = Lists.newArrayList();
-        for (Conditions condition : pages.getConditions()) {
-            /**
-             * 除了is null or is not null 条件外，其他条件必须带值
-             */
-            if (condition.getMatchType() != MatchType.ISN && condition.getMatchType() != MatchType.INN) {
-                if (StringUtil.isBlank(condition.getValue())) {
-                    logger.warn("condition: " + condition.getProperty() + " value is null, ignore this condition");
-                    continue;
-                }
-            }
-            PropertyFilter filter = new PropertyFilter();
-
-            switch (condition.getMatchType()) {
-                case LL:
-                    filter.setRestrictionName(RestrictionNames.LLIKE);
-                    break;
-                case RL:
-                    filter.setRestrictionName(RestrictionNames.RLIKE);
-                    break;
-                case EQ:
-                    filter.setRestrictionName(RestrictionNames.EQ);
-                    break;
-                case NE:
-                    filter.setRestrictionName(RestrictionNames.NE);
-                    break;
-                case BW:
-                    if (StringUtil.isBlank(condition.getAnotherValue())) {
-                        continue;
-                    }
-                    break;
-                case FL:
-                    filter.setRestrictionName(RestrictionNames.LIKE);
-                    break;
-                case ISN:
-                    filter.setRestrictionName(RestrictionNames.ISN);
-                    break;
-                case INN:
-                    filter.setRestrictionName(RestrictionNames.INN);
-                    break;
-                default:
-                    logger.warn("暂时不支持该操作:{}", condition.getMatchType());
-                    break;
-            }
-            /**
-             * FIXME 不同参数类型的问题
-             */
-            if (StringUtil.isNotBlank(condition.getValue())) {
-                filter.setPropertyType(condition.getValue().getClass());
-                filter.setMatchValue(condition.getValue().toString());
-            }
-            filter.setPropertyNames(new String[]{condition.getProperty()});
-            filters.add(filter);
-        }
-
         if (pages.getPageSize() == -1) {
-            List<T> result = findBy(filters, Sort.by(orders));
+            List<T> result = findBy(pages.getConditions(), pages.getSort());
             pages.setResult(result);
             pages.setTotalCount(result.size());
         } else {
+            List<Order> orders = Lists.newArrayList();
+            if (null != pages.getSort()) {
+                Iterator<cn.wuxia.common.orm.query.Sort.Order> it = pages.getSort().iterator();
+                while (it.hasNext()) {
+                    cn.wuxia.common.orm.query.Sort.Order order = it.next();
+                    if (order.isAscending()) {
+                        orders.add(new Order(Direction.ASC, order.getProperty()));
+                    } else {
+                        orders.add(new Order(Direction.DESC, order.getProperty()));
+                    }
+                }
+            }
             PageRequest pageRequest = PageRequest.of(pages.getPageNo() - 1, pages.getPageSize(), Sort.by(orders));
-            Page<T> page = findPage(pageRequest, filters);
+            Page<T> page = findPage(pageRequest, ListUtil.listToArray(pages.getConditions()));
             pages.setResult(page.getContent());
             pages.setPageNo(page.getNumber() + 1);
             pages.setPageSize(page.getSize());
@@ -270,6 +254,7 @@ public class JpaSupportRepository<T, ID extends Serializable> extends SimpleJpaR
         }
         return pages;
     }
+
 
     @Override
     public <X> Pages<X> queryPage(final Pages<X> page, final Class<X> clazz, final String jpql, final Object... values) {
