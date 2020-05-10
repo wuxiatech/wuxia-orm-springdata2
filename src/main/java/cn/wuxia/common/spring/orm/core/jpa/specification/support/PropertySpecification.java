@@ -63,6 +63,7 @@ public class PropertySpecification<T> implements Specification<T> {
      * persistence.criteria.Root, javax.persistence.criteria.CriteriaQuery,
      * javax.persistence.criteria.CriteriaBuilder)
      */
+    @Override
     public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 
         Predicate predicate = builder.and(JpaRestrictionBuilder.getRestriction(propertyName, value, restrictionName,

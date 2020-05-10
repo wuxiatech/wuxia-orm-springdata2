@@ -5,6 +5,8 @@ import cn.wuxia.common.orm.query.MatchType;
 import cn.wuxia.common.spring.orm.core.PropertyFilter;
 import cn.wuxia.common.spring.orm.core.jpa.JpaRestrictionBuilder;
 import cn.wuxia.common.spring.orm.core.jpa.specification.SpecificationModel;
+import cn.wuxia.common.util.ArrayUtil;
+import cn.wuxia.common.util.ListUtil;
 import cn.wuxia.common.util.StringUtil;
 import com.google.common.collect.Lists;
 import org.springframework.data.jpa.domain.Specification;
@@ -43,10 +45,12 @@ public class ConditionsSpecification<T> implements Specification<T> {
     /**
      * 通过属性过滤器集合构建
      *
-     * @param condition 集合
+     * @param conditions 集合
      */
-    public ConditionsSpecification(List<Conditions> condition) {
-        this.conditions.addAll(condition);
+    public ConditionsSpecification(List<Conditions> conditions) {
+        if (ListUtil.isNotEmpty(conditions)) {
+            this.conditions.addAll(conditions);
+        }
     }
 
     /**
@@ -55,7 +59,9 @@ public class ConditionsSpecification<T> implements Specification<T> {
      * @param conditions 集合
      */
     public ConditionsSpecification(Conditions... conditions) {
-        this.conditions.addAll(Lists.newArrayList(conditions));
+        if (ArrayUtil.isNotEmpty(conditions)) {
+            this.conditions.addAll(Lists.newArrayList(conditions));
+        }
     }
 
     /*

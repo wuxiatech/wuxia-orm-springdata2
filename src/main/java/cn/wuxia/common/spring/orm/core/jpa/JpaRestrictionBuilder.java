@@ -94,6 +94,10 @@ public class JpaRestrictionBuilder {
                 return RestrictionNames.RLIKE;
             case FL:
                 return RestrictionNames.LIKE;
+            case ISN:
+                return RestrictionNames.ISN;
+            case INN:
+                return RestrictionNames.INN;
             default:
                 return matchType.name();
         }
