@@ -25,7 +25,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 
 public class PageableArgumentResolver implements WebArgumentResolver {
 
-    private static final Pageable DEFAULT_PAGE_REQUEST = new PageRequest(0, 10);
+    private static final Pageable DEFAULT_PAGE_REQUEST =  PageRequest.of(0, 10);
 
     private static final String DEFAULT_PREFIX = "page";
 
@@ -110,7 +110,7 @@ public class PageableArgumentResolver implements WebArgumentResolver {
         // Construct request with fallback request to ensure sensible
         // default values. Create fresh copy as Spring will manipulate the
         // instance under the covers
-        return new PageRequest(fallbackPagable.getPageNumber(), fallbackPagable.getPageSize(),
+        return  PageRequest.of(fallbackPagable.getPageNumber(), fallbackPagable.getPageSize(),
                 fallbackPagable.getSort());
     }
 
@@ -121,10 +121,10 @@ public class PageableArgumentResolver implements WebArgumentResolver {
         int defaultPageSize = defaults.value();
 
         if (defaults.sort().length == 0) {
-            return new PageRequest(defaultPageNumber, defaultPageSize);
+            return  PageRequest.of(defaultPageNumber, defaultPageSize);
         }
 
-        return new PageRequest(defaultPageNumber, defaultPageSize, defaults.direction(), defaults.sort());
+        return  PageRequest.of(defaultPageNumber, defaultPageSize, defaults.direction(), defaults.sort());
     }
 
     /**
@@ -274,7 +274,7 @@ public class PageableArgumentResolver implements WebArgumentResolver {
             PropertyValue rawOrder = values.getPropertyValue(orderProperty);
             Direction order = null == rawOrder ? Direction.ASC : Direction.fromString(rawOrder.getValue().toString());
 
-            setValue(new Sort(order, text));
+            setValue( Sort.by(order, text));
         }
     }
 

@@ -230,7 +230,7 @@ public abstract class SpringDataMongoDao<T, K extends Serializable> {
      */
     public List<T> findBy(final String properties, final Object value, String orderby, Direction direction) {
         Query query = new Query(Criteria.where(properties).is(value));
-        Sort sort = new Sort(new Sort.Order(direction, orderby));
+        Sort sort =  Sort.by(direction, orderby);
         query.with(sort);
         return this.find(query);
     }
