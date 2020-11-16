@@ -88,6 +88,14 @@ public abstract class SpringDataMongoDao<T, K extends Serializable> {
     }
 
     /**
+     * @param conditions
+     * @return
+     */
+    public T findUniqueBy(final Conditions... conditions) {
+        return this.findUnique(condition2Query(conditions));
+    }
+
+    /**
      * @param properties
      * @param value
      * @return
@@ -253,7 +261,55 @@ public abstract class SpringDataMongoDao<T, K extends Serializable> {
      * @return
      */
     public Pages<T> findPage(Query query, Pages<T> page) {
-        for (Conditions cond : page.getConditions()) {
+        addCondition2Query(query, page.getConditions());
+        long count = this.count(query);
+        if (count <= 0) {
+            return page;
+        }
+        page.setTotalCount(count);
+        int pageNumber = page.getPageNo();
+        int pageSize = page.getPageSize();
+        if (pageSize != -1) {
+            query.skip((pageNumber - 1) * pageSize).limit(pageSize);
+        }
+        if (page.getSort() != null) {
+            Iterator<Order> iterator = page.getSort().iterator();
+            List<Sort.Order> orders = Lists.newLinkedList();
+            while (iterator.hasNext()) {
+                Order order = iterator.next();
+                if (order.isAscending()) {
+                    orders.add(new Sort.Order(Direction.ASC, order.getProperty()));
+                } else {
+                    orders.add(new Sort.Order(Direction.DESC, order.getProperty()));
+                }
+            }
+            query.with(Sort.by(orders));
+        }
+        List<T> rows = this.find(query);
+        page.setResult(rows);
+        return page;
+    }
+
+    /**
+     * 分页查找
+     *
+     * @param query
+     * @param conditions
+     * @return
+     */
+    protected void addCondition2Query(Query query, List<Conditions> conditions) {
+        addCondition2Query(query, conditions.toArray(new Conditions[]{}));
+    }
+
+    /**
+     * 分页查找
+     *
+     * @param query
+     * @param conditions
+     * @return
+     */
+    protected void addCondition2Query(Query query, Conditions... conditions) {
+        for (Conditions cond : conditions) {
             /**
              * 除了is null or is not null 条件外，其他条件必须带值
              */
@@ -320,34 +376,19 @@ public abstract class SpringDataMongoDao<T, K extends Serializable> {
             }
 
         }
-        long count = this.count(query);
-        if (count <= 0) {
-            return page;
-        }
-        page.setTotalCount(count);
-        int pageNumber = page.getPageNo();
-        int pageSize = page.getPageSize();
-        if (pageSize != -1) {
-            query.skip((pageNumber - 1) * pageSize).limit(pageSize);
-        }
-        if (page.getSort() != null) {
-            Iterator<Order> iterator = page.getSort().iterator();
-            List<Sort.Order> orders = Lists.newLinkedList();
-            while (iterator.hasNext()) {
-                Order order = iterator.next();
-                if (order.isAscending()) {
-                    orders.add(new Sort.Order(Direction.ASC, order.getProperty()));
-                } else {
-                    orders.add(new Sort.Order(Direction.DESC, order.getProperty()));
-                }
-            }
-            query.with(Sort.by(orders));
-        }
-        List<T> rows = this.find(query);
-        page.setResult(rows);
-        return page;
     }
 
+    /**
+     * 将condition转换为mongodb query
+     *
+     * @param conditions
+     * @return
+     */
+    protected Query condition2Query(Conditions... conditions) {
+        Query query = new Query();
+        addCondition2Query(query, conditions);
+        return query;
+    }
     /**
      * 统计总数
      *
